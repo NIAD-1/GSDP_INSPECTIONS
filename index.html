@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSDP Inspection & Risk System</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Libraries -->
+    <!-- PizZip for zipping/unzipping files (needed for docxtemplater) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <!-- Docxtemplater for Word generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+    <!-- FileSaver for saving files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Firebase (Modular SDK - we will use ES modules in JS) -->
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-body); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div
+            style="text-align: center; background: white; padding: 3rem; border-radius: 16px; box-shadow: var(--shadow-md);">
+            <div style="margin-bottom: 1rem;">
+                <img src="nafdac_logo.png" alt="NAFDAC Logo" style="height: 120px; width: auto;">
+            </div>
+            <h1 style="margin-bottom: 0.5rem; font-size: 1.5rem;">NAFDAC PMS GSDP Inspection System</h1>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Inspection & Risk Management System</p>
+            <button id="login-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 1rem;">
+                <span class="material-icons-round">login</span> Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <div class="app-container" style="display: none;">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <img src="nafdac_logo.png" alt="NAFDAC Logo" style="height: 40px; width: auto; margin-right: 0.5rem;">
+                <h2 style="font-size: 1rem;">NAFDAC PMS GSDP</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-view="dashboard">
+                    <span class="material-icons-round">dashboard</span>
+                    <span>Dashboard</span>
+                </li>
+                <li data-view="new-inspection">
+                    <span class="material-icons-round">add_task</span>
+                    <span>New Inspection</span>
+                </li>
+                <li data-view="settings">
+                    <span class="material-icons-round">settings</span>
+                    <span>Settings</span>
+                </li>
+            </ul>
+            <div class="user-profile">
+                <div class="avatar">U</div>
+                <div class="info">
+                    <span class="name">Inspector</span>
+                    <span class="role">Admin</span>
+                </div>
+                <button id="logout-btn" class="btn-outline" style="margin-left: auto; padding: 0.4rem;">
+                    <span class="material-icons-round">logout</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="actions">
+                    <button class="btn-secondary" id="sync-btn">
+                        <span class="material-icons-round">sync</span> Sync
+                    </button>
+                    <button class="btn-primary" id="new-btn">
+                        <span class="material-icons-round">add</span> New Log
+                    </button>
+                </div>
+            </header>
+
+            <!-- Views Container -->
+            <div id="view-container" class="view-container">
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="view active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total Inspections</h3>
+                            <p class="value">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>High Risk</h3>
+                            <p class="value error-text">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Pending Reports</h3>
+                            <p class="value warning-text">0</p>
+                        </div>
+                    </div>
+
+                    <div class="table-section">
+                        <div class="table-header">
+                            <h2>Company Risk Overview</h2>
+                            <button class="btn-outline" onclick="exportToExcel()">
+                                <span class="material-icons-round">file_download</span> Export Excel
+                            </button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Facility Name</th>
+                                        <th>Date</th>
+                                        <th>Risk Level</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-table-body">
+                                    <!-- Rows will be populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Inspection View -->
+                <div id="view-new-inspection" class="view">
+                    <div class="form-stepper">
+                        <div class="step active" data-step="1">1. Facility Info</div>
+                        <div class="step" data-step="2">2. Inspection Data</div>
+                        <div class="step" data-step="3">3. Review & Submit</div>
+                    </div>
+
+                    <form id="inspection-form" class="main-form">
+                        <!-- Step 1: Facility Info -->
+                        <div class="form-section active" id="section-facility">
+                            <h2>Facility Information</h2>
+                            <div class="grid-2">
+                                <div class="input-group">
+                                    <label>Facility Name</label>
+                                    <input type="text" name="facility_name" required placeholder="Enter facility name">
+                                </div>
+                                <div class="input-group">
+                                    <label>Inspection Date</label>
+                                    <input type="date" name="inspection_date" required>
+                                </div>
+                                <div class="input-group full-width">
+                                    <label>Facility Address</label>
+                                    <input type="text" name="facility_address" required placeholder="Full address">
+                                </div>
+                                <div class="input-group">
+                                    <label>Contact Person</label>
+                                    <input type="text" name="contact_person" required placeholder="Name of personnel">
+                                </div>
+                                <div class="input-group">
+                                    <label>Inspectors</label>
+                                    <input type="text" name="inspectors" required placeholder="Comma separated names">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-primary" onclick="nextStep(2)">Next: Inspection
+                                    Data</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Inspection Data (Split into GSDP and Risk) -->
+                        <div class="form-section" id="section-data">
+                            <div class="tabs">
+                                <button type="button" class="tab active" onclick="switchTab('gsdp')">GSDP
+                                    Inspection</button>
+                                <button type="button" class="tab" onclick="switchTab('risk')">Risk
+                                    Categorization</button>
+                            </div>
+
+                            <!-- GSDP Tab -->
+                            <div id="tab-gsdp" class="tab-content active">
+                                <h3>GSDP Findings</h3>
+                                <div id="findings-container">
+                                    <!-- Dynamic finding rows will be added here -->
+                                </div>
+                                <button type="button" class="btn-secondary" onclick="addFindingRow()">
+                                    <span class="material-icons-round">add</span> Add Finding
+                                </button>
+                            </div>
+
+                            <!-- Risk Tab -->
+                            <div id="tab-risk" class="tab-content">
+                                <h3>Risk Assessment</h3>
+                                <div class="grid-2">
+                                    <div class="input-group">
+                                        <label>Storage Condition Score</label>
+                                        <select name="risk_storage">
+                                            <option value="low">Good</option>
+                                            <option value="medium">Average</option>
+                                            <option value="high">Poor</option>
+                                        </select>
+                                    </div>
+                                    <!-- Add more risk fields as needed -->
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-outline" onclick="prevStep(1)">Back</button>
+                                <button type="button" class="btn-primary" onclick="nextStep(3)">Next: Review</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Review -->
+                        <div class="form-section" id="section-review">
+                            <h2>Review & Generate</h2>
+                            <p>Please review the information before generating reports.</p>
+
+                            <div class="review-summary">
+                                <!-- Summary injected by JS -->
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-outline" onclick="prevStep(2)">Back</button>
+                                <button type="submit" class="btn-primary">
+                                    <span class="material-icons-round">description</span> Generate Reports & Save
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
