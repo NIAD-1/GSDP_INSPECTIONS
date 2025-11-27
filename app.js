@@ -209,6 +209,16 @@ function setupFormSubmission() {
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
+            // Helper to format multi-line text as bullet points
+            const formatAsBulletedList = (text) => {
+                if (!text) return text;
+                return text.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0)
+                    .map(line => `• ${line}`)
+                    .join('\n');
+            };
+
             // Format Date
             if (data.inspection_date) {
                 const dateObj = new Date(data.inspection_date);
@@ -265,17 +275,33 @@ function setupFormSubmission() {
             if (data.trainee_inspector_2) {
                 data.inspectors_list.push({
                     name: data.trainee_inspector_2,
-                    designation: data.trainee_inspector_2_designation,
                     rank: data.trainee_inspector_2_designation,
                     role: "Trainee Inspector"
                 });
             }
 
-            // Gather findings
+            // Apply bullet formatting to specific fields
+            const bulletFields = [
+                'activities_info', 'premises_adequacy_info', 'warehouse_info',
+                'special_storage_info', 'documentation_info', 'distribution_info',
+                'recommendations', 'summary_conclusion', 'inspected_areas',
+                'licensing_adherence'
+            ];
+
+            bulletFields.forEach(field => {
+                if (data[field]) {
+                    data[field] = formatAsBulletedList(data[field]);
+                }
+            });
+
+            // Gather findings with Index and Bullets
             const findings = [];
+            let fIndex = 1;
             document.querySelectorAll('.finding-row').forEach(row => {
+                const obsText = row.querySelector('.finding-input').value;
                 findings.push({
-                    observation: row.querySelector('.finding-input').value,
+                    index: fIndex++, // 1, 2, 3...
+                    observation: formatAsBulletedList(obsText), // Bulleted sub-points
                     guideline: row.querySelector('.guideline-output').value,
                     classification: row.querySelector('.finding-type').value
                 });
@@ -283,6 +309,7 @@ function setupFormSubmission() {
 
             // Gather personnel with Aliases
             const personnel = [];
+            let pIndex = 1;
             document.querySelectorAll('#personnel-container .grid-2').forEach(row => {
                 const pName = row.querySelector('.p-name').value;
                 const pDesig = row.querySelector('.p-designation').value;
@@ -291,6 +318,7 @@ function setupFormSubmission() {
                 const pEmail = row.querySelector('.p-email').value;
 
                 personnel.push({
+                    index: pIndex++,
                     // Standard keys
                     name: pName,
                     designation: pDesig,
@@ -324,6 +352,14 @@ function setupFormSubmission() {
             data.findings = findings;
             data.has_critical = findings.some(f => f.classification === 'Critical');
             data.has_major = findings.some(f => f.classification === 'Major');
+
+            // Create Summary Lists for Letter Templates
+            const majorList = findings.filter(f => f.classification === 'Critical' || f.classification === 'Major');
+            const otherList = findings.filter(f => f.classification !== 'Critical' && f.classification !== 'Major');
+
+            data.major_findings = majorList.map(f => `• ${f.observation}`).join('\n') || "Nil";
+            data.other_findings = otherList.map(f => `• ${f.observation}`).join('\n') || "Nil";
+
             data.timestamp = Timestamp.now();
             data.status = "Completed";
 
