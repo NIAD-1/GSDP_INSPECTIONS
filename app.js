@@ -326,13 +326,19 @@ async function generateReports(data) {
         { name: 'RISK_CATEGORIZATION TEMPLATE.docx', out: `${data.facility_name}_Risk.docx` }
     ];
 
+    let errorMessages = [];
     for (const t of templates) {
         try {
             const content = await loadFile(t.name);
             renderTemplate(content, data, t.out);
         } catch (err) {
             console.warn(`Skipping ${t.name}: ${err.message}`);
+            errorMessages.push(`${t.name}: ${err.message}`);
         }
+    }
+
+    if (errorMessages.length > 0) {
+        alert(`Some reports failed to generate:\n\n${errorMessages.join('\n')}\n\nPlease check the Word templates for syntax errors (e.g. missing braces).`);
     }
 }
 
