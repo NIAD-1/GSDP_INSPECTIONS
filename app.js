@@ -209,13 +209,66 @@ function setupFormSubmission() {
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
-            // Format Date to dd-mm-yyyy for report
+            // Format Date
             if (data.inspection_date) {
                 const dateObj = new Date(data.inspection_date);
                 const day = String(dateObj.getDate()).padStart(2, '0');
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
                 const year = dateObj.getFullYear();
                 data.inspection_date = `${day}-${month}-${year}`;
+                data.date = data.inspection_date; // Alias
+            }
+
+            // Log Date (Today's date)
+            const today = new Date();
+            const tDay = String(today.getDate()).padStart(2, '0');
+            const tMonth = String(today.getMonth() + 1).padStart(2, '0');
+            const tYear = today.getFullYear();
+            data.log_date = `${tDay}-${tMonth}-${tYear}`;
+
+            // --- Robust Data Mapping for Template Compatibility ---
+
+            // 1. Inspector Aliases (Map to common variations)
+            data.lead_designation = data.lead_inspector_designation;
+            data.lead_rank = data.lead_inspector_designation;
+
+            data.co_designation = data.co_inspector_designation;
+            data.co_rank = data.co_inspector_designation;
+
+            data.trainee_designation = data.trainee_inspector_designation;
+            data.trainee_rank = data.trainee_inspector_designation;
+
+            // 2. Create Inspectors List (for templates using loops)
+            data.inspectors_list = [
+                {
+                    name: data.lead_inspector,
+                    designation: data.lead_inspector_designation,
+                    rank: data.lead_inspector_designation,
+                    role: "Lead Inspector"
+                },
+                {
+                    name: data.co_inspector,
+                    designation: data.co_inspector_designation,
+                    rank: data.co_inspector_designation,
+                    role: "Co-Inspector"
+                }
+            ];
+            // Add trainees if present
+            if (data.trainee_inspector) {
+                data.inspectors_list.push({
+                    name: data.trainee_inspector,
+                    designation: data.trainee_inspector_designation,
+                    rank: data.trainee_inspector_designation,
+                    role: "Trainee Inspector"
+                });
+            }
+            if (data.trainee_inspector_2) {
+                data.inspectors_list.push({
+                    name: data.trainee_inspector_2,
+                    designation: data.trainee_inspector_2_designation,
+                    rank: data.trainee_inspector_2_designation,
+                    role: "Trainee Inspector"
+                });
             }
 
             // Gather findings
@@ -228,15 +281,31 @@ function setupFormSubmission() {
                 });
             });
 
-            // Gather personnel
+            // Gather personnel with Aliases
             const personnel = [];
             document.querySelectorAll('#personnel-container .grid-2').forEach(row => {
+                const pName = row.querySelector('.p-name').value;
+                const pDesig = row.querySelector('.p-designation').value;
+                const pQual = row.querySelector('.p-qualification').value;
+                const pPhone = row.querySelector('.p-phone').value;
+                const pEmail = row.querySelector('.p-email').value;
+
                 personnel.push({
-                    name: row.querySelector('.p-name').value,
-                    designation: row.querySelector('.p-designation').value,
-                    qualification: row.querySelector('.p-qualification').value,
-                    phone: row.querySelector('.p-phone').value,
-                    email: row.querySelector('.p-email').value
+                    // Standard keys
+                    name: pName,
+                    designation: pDesig,
+                    qualification: pQual,
+                    phone: pPhone,
+                    email: pEmail,
+
+                    // Aliases for template compatibility
+                    personnel_name: pName,
+                    personnel_designation: pDesig,
+                    personnel_qualification: pQual,
+                    personnel_phone: pPhone,
+                    personnel_email: pEmail,
+
+                    rank: pDesig // Alias
                 });
             });
 
@@ -250,6 +319,7 @@ function setupFormSubmission() {
             }
             // Also pass full list for templates that support loops
             data.personnel_list = personnel;
+            data.personnel = personnel; // Alias
 
             data.findings = findings;
             data.has_critical = findings.some(f => f.classification === 'Critical');
@@ -262,6 +332,8 @@ function setupFormSubmission() {
             if (data.has_critical) riskLevel = "High";
             else if (data.has_major) riskLevel = "Medium";
             data.risk_level = riskLevel;
+
+            console.log("Generating Report with Data:", data); // Debug log
 
             // 1. Generate Reports
             await generateReports(data);
