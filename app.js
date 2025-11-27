@@ -76,7 +76,8 @@ function setupFormNavigation() {
 
         const tabs = document.querySelectorAll('.tab');
         if (tabName === 'gsdp') tabs[0].classList.add('active');
-        else tabs[1].classList.add('active');
+        else if (tabName === 'details') tabs[1].classList.add('active');
+        else tabs[2].classList.add('active');
 
         document.getElementById(`tab-${tabName}`).classList.add('active');
     };
@@ -203,7 +204,7 @@ async function generateReports(data) {
     };
 
     const renderTemplate = (content, data, outputName) => {
-        const zip = new PizZip(content);
+        const zip = new window.PizZip(content);
         const doc = new window.docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
@@ -242,8 +243,15 @@ async function loadDashboardData() {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading history...</td></tr>';
 
     try {
-        const q = query(collection(db, "inspections"), orderBy("timestamp", "desc"));
-        const querySnapshot = await getDocs(q);
+        // Check if we are in guest mode or if DB is accessible
+        let querySnapshot;
+        try {
+            const q = query(collection(db, "inspections"), orderBy("timestamp", "desc"));
+            querySnapshot = await getDocs(q);
+        } catch (dbError) {
+            console.warn("Firebase DB access failed (likely Guest mode or bad config):", dbError);
+            throw new Error("Offline Mode");
+        }
 
         tbody.innerHTML = '';
         let total = 0;
@@ -273,8 +281,18 @@ async function loadDashboardData() {
         document.querySelectorAll('.stat-card .value')[1].textContent = highRisk;
 
     } catch (error) {
-        console.error("Error loading dashboard:", error);
-        tbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">Error loading data: ${error.message}</td></tr>`;
+        console.error("Dashboard load error:", error);
+        // Fallback for Guest/Offline
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center; color: var(--text-muted);">
+                    <span class="material-icons-round" style="vertical-align: middle;">wifi_off</span> 
+                    Guest Mode / Offline (History not available)
+                </td>
+            </tr>
+        `;
+        document.querySelectorAll('.stat-card .value')[0].textContent = "-";
+        document.querySelectorAll('.stat-card .value')[1].textContent = "-";
     }
 }
 
