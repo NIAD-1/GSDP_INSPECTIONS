@@ -201,9 +201,9 @@
                                     </select>
                                 </div>
                                 <div class="input-group">
-                                    <label>Lead Inspector Rank</label>
+                                    <label>Designation</label>
                                     <select name="lead_inspector_designation">
-                                        <option value="">Select Rank...</option>
+                                        <option value="">Select Designation...</option>
                                         <option value="DD">DD</option>
                                         <option value="AD">AD</option>
                                         <option value="CRO">CRO</option>
@@ -233,9 +233,9 @@
                                     </select>
                                 </div>
                                 <div class="input-group">
-                                    <label>Co-Inspector Rank</label>
+                                    <label>Designation</label>
                                     <select name="co_inspector_designation">
-                                        <option value="">Select Rank...</option>
+                                        <option value="">Select Designation...</option>
                                         <option value="DD">DD</option>
                                         <option value="AD">AD</option>
                                         <option value="CRO">CRO</option>
@@ -255,11 +255,13 @@
                                     <input type="text" name="trainee_inspector" placeholder="Name">
                                 </div>
                                 <div class="input-group">
-                                    <label>Trainee 1 Rank</label>
+                                    <label>Designation</label>
                                     <select name="trainee_inspector_designation">
                                         <option value="Regulatory Officer">Regulatory Officer</option>
                                         <option value="ROI">ROI</option>
                                         <option value="ROII">ROII</option>
+                                        <option value="Intern Pharmacist">Intern Pharmacist</option>
+                                        <option value="Youth Corper">Youth Corper</option>
                                     </select>
                                 </div>
                                 <div class="input-group">
@@ -267,11 +269,13 @@
                                     <input type="text" name="trainee_inspector_2" placeholder="Name">
                                 </div>
                                 <div class="input-group">
-                                    <label>Trainee 2 Rank</label>
+                                    <label>Designation</label>
                                     <select name="trainee_inspector_2_designation">
                                         <option value="Regulatory Officer">Regulatory Officer</option>
                                         <option value="ROI">ROI</option>
                                         <option value="ROII">ROII</option>
+                                        <option value="Intern Pharmacist">Intern Pharmacist</option>
+                                        <option value="Youth Corper">Youth Corper</option>
                                     </select>
                                 </div>
                             </div>
@@ -429,6 +433,15 @@
 
     <!-- Scripts -->
     <script type="module" src="app.js"></script>
+    <script>
+        // Set default date to today
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.querySelector('input[name="inspection_date"]');
+            if (dateInput) {
+                dateInput.valueAsDate = new Date();
+            }
+        });
+    </script>
 </body>
 
 </html>

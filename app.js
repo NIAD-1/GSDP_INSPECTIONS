@@ -209,6 +209,15 @@ function setupFormSubmission() {
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
+            // Format Date to dd-mm-yyyy for report
+            if (data.inspection_date) {
+                const dateObj = new Date(data.inspection_date);
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const year = dateObj.getFullYear();
+                data.inspection_date = `${day}-${month}-${year}`;
+            }
+
             // Gather findings
             const findings = [];
             document.querySelectorAll('.finding-row').forEach(row => {
