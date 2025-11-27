@@ -404,12 +404,24 @@ function setupFormSubmission() {
             data.risk_score = riskScore;
             data.risk_rating = riskRating;
 
-            // "Circle One" Indicators (using text brackets)
-            data.risk_circle_1 = riskScore === 1 ? "[ X ]" : "[   ]";
-            data.risk_circle_2 = riskScore === 2 ? "[ X ]" : "[   ]";
-            data.risk_circle_3 = riskScore === 3 ? "[ X ]" : "[   ]";
+            // "Circle One" Indicators (Unicode for Part B)
+            // If selected, use circled number (①, ②, ③). If not, use plain number (1, 2, 3).
+            data.risk_circle_1 = riskScore === 1 ? "①" : "1";
+            data.risk_circle_2 = riskScore === 2 ? "②" : "2";
+            data.risk_circle_3 = riskScore === 3 ? "③" : "3";
 
-            // --- Aliases for Risk Categorization Template (Matching User's Screenshots) ---
+            // "Tick One" Indicators (Unicode for Part C)
+            // If selected, use Checked Box (☑). If not, use Empty Box (☐).
+            data.risk_tick_A = riskRating === "A" ? "☑" : "☐";
+            data.risk_tick_B = riskRating === "B" ? "☑" : "☐";
+            data.risk_tick_C = riskRating === "C" ? "☑" : "☐";
+
+            // Also map old aliases just in case, but encourage new ones
+            data.risk_score_1 = data.risk_circle_1;
+            data.risk_score_2 = data.risk_circle_2;
+            data.risk_score_3 = data.risk_circle_3;
+
+            // --- Aliases for Risk Categorization Template ---
             data.lead_inspectors = data.lead_inspector;
             data.co_inspectors = data.co_inspector;
             data.trainee_inspectors = data.trainee_inspector;
@@ -417,12 +429,7 @@ function setupFormSubmission() {
             // data.licence_info is already correct from the form input name="licence_info"
             // data.superintendent_licence_info is already correct from input name="superintendent_licence_info"
 
-            data.operations = data.operations_carried_out;
-
-            // Risk Score Aliases
-            data.risk_score_1 = data.risk_circle_1;
-            data.risk_score_2 = data.risk_circle_2;
-            data.risk_score_3 = data.risk_circle_3;
+            data.operations = data.operations_carried_out; // Now correctly mapped from form
 
             data.last_inspection_date = "N/A";
 
@@ -520,20 +527,29 @@ async function generateReports(data) {
 // --- Dashboard Logic ---
 async function loadDashboardStats() {
     try {
-        const querySnapshot = await getDocs(collection(db, "inspections"));
-        const total = querySnapshot.size;
-
+        let total = 0;
         let high = 0;
         let medium = 0;
         let low = 0;
 
-        querySnapshot.forEach((doc) => {
-            const d = doc.data();
-            // Check risk_rating (A=High, B=Medium, C=Low)
-            if (d.risk_rating === 'A') high++;
-            else if (d.risk_rating === 'B') medium++;
-            else low++; // Default or 'C'
-        });
+        const processItem = (d) => {
+            total++;
+            if (d.risk_rating === 'A' || d.risk_level === 'High') high++;
+            else if (d.risk_rating === 'B' || d.risk_level === 'Medium') medium++;
+            else low++;
+        };
+
+        // 1. Try Firestore
+        try {
+            const querySnapshot = await getDocs(collection(db, "inspections"));
+            querySnapshot.forEach((doc) => processItem(doc.data()));
+        } catch (e) {
+            console.log("Firestore stats failed, using local only");
+        }
+
+        // 2. Add Local Storage
+        const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
+        localData.forEach(processItem);
 
         // Update UI
         const totalEl = document.getElementById('total-inspections');
@@ -547,7 +563,7 @@ async function loadDashboardStats() {
         if (lowEl) lowEl.textContent = low;
 
     } catch (error) {
-        console.log("Dashboard load error (likely offline):", error);
+        console.log("Dashboard load error:", error);
     }
 }
 
@@ -557,33 +573,45 @@ async function loadDashboardData() {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading history...</td></tr>';
 
     try {
-        // Check if we are in guest mode or if DB is accessible
-        let querySnapshot;
+        let allItems = [];
+
+        // 1. Get Firestore Data
         try {
             const q = query(collection(db, "inspections"), orderBy("timestamp", "desc"));
-            querySnapshot = await getDocs(q);
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(doc => allItems.push(doc.data()));
         } catch (dbError) {
-            console.warn("Firebase DB access failed (likely Guest mode or bad config):", dbError);
-            throw new Error("Offline Mode");
+            console.warn("Firestore access failed, using local data only.");
         }
 
+        // 2. Get Local Storage Data
+        const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
+        // Sort local data by timestamp desc (if possible)
+        allItems = [...allItems, ...localData].sort((a, b) => {
+            const tA = a.timestamp && a.timestamp.seconds ? a.timestamp.seconds : (a.timestamp instanceof Date ? a.timestamp.getTime() / 1000 : 0);
+            const tB = b.timestamp && b.timestamp.seconds ? b.timestamp.seconds : (b.timestamp instanceof Date ? b.timestamp.getTime() / 1000 : 0);
+            return tB - tA;
+        });
+
         tbody.innerHTML = '';
-        let total = 0;
-        let highRisk = 0;
 
-        querySnapshot.forEach((doc) => {
-            const item = doc.data();
-            total++;
-            if (item.risk_level === 'High') highRisk++;
+        if (allItems.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No inspections found.</td></tr>';
+            return;
+        }
 
-            const date = item.timestamp ? item.timestamp.toDate().toLocaleDateString() : item.inspection_date;
+        allItems.forEach((item) => {
+            const date = item.timestamp
+                ? (item.timestamp.toDate ? item.timestamp.toDate().toLocaleDateString() : new Date(item.timestamp.seconds * 1000).toLocaleDateString())
+                : (item.inspection_date || "N/A");
+            const risk = item.risk_level || (item.risk_rating === 'A' ? 'High' : item.risk_rating === 'B' ? 'Medium' : 'Low');
 
             const row = `
                 <tr>
                     <td>${item.facility_name}</td>
                     <td>${date}</td>
-                    <td><span style="color: ${getRiskColor(item.risk_level)}; font-weight: 600;">${item.risk_level}</span></td>
-                    <td>${item.status}</td>
+                    <td><span style="color: ${getRiskColor(risk)}; font-weight: 600;">${risk}</span></td>
+                    <td>${item.status || 'Completed'}</td>
                     <td><button class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">View</button></td>
                 </tr>
             `;
@@ -591,22 +619,12 @@ async function loadDashboardData() {
         });
 
         // Update Stats
-        document.querySelectorAll('.stat-card .value')[0].textContent = total;
-        document.querySelectorAll('.stat-card .value')[1].textContent = highRisk;
+        document.querySelectorAll('.stat-card .value')[0].textContent = allItems.length;
+        document.querySelectorAll('.stat-card .value')[1].textContent = allItems.filter(item => item.risk_level === 'High' || item.risk_rating === 'A').length;
 
     } catch (error) {
         console.error("Dashboard load error:", error);
-        // Fallback for Guest/Offline
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align:center; color: var(--text-muted);">
-                    <span class="material-icons-round" style="vertical-align: middle;">wifi_off</span> 
-                    Guest Mode / Offline (History not available)
-                </td>
-            </tr>
-        `;
-        document.querySelectorAll('.stat-card .value')[0].textContent = "-";
-        document.querySelectorAll('.stat-card .value')[1].textContent = "-";
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error loading data.</td></tr>';
     }
 }
 
