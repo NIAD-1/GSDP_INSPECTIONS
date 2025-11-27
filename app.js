@@ -412,23 +412,18 @@ function setupFormSubmission() {
             // --- Aliases for Risk Categorization Template (Matching User's Screenshots) ---
             data.lead_inspectors = data.lead_inspector;
             data.co_inspectors = data.co_inspector;
-            data.trainee_inspectors = data.trainee_inspector; // For the first trainee
-            // Note: Template shows two trainee slots, we might need a specific alias for the second if they use the same tag.
-            // But usually docxtemplater with same tag repeats the value. 
-            // If they have {trainee_inspectors} twice, it will show the same name unless we map distinct keys.
-            // Let's map the second one if available, but the template likely needs distinct tags or a loop.
-            // For now, we'll map the plural to the singular.
+            data.trainee_inspectors = data.trainee_inspector;
 
-            data.licence_info = data.premise_license_number;
-            data.superintendent_licence_info = data.superintendent_license_number;
+            // data.licence_info is already correct from the form input name="licence_info"
+            // data.superintendent_licence_info is already correct from input name="superintendent_licence_info"
+
             data.operations = data.operations_carried_out;
 
-            // Risk Score Aliases (User's template uses risk_score_1, etc for checkboxes)
+            // Risk Score Aliases
             data.risk_score_1 = data.risk_circle_1;
             data.risk_score_2 = data.risk_circle_2;
             data.risk_score_3 = data.risk_circle_3;
 
-            // Last Inspection Date (Not currently in form, defaulting to "N/A")
             data.last_inspection_date = "N/A";
 
             data.timestamp = Timestamp.now();
@@ -446,19 +441,20 @@ function setupFormSubmission() {
             await generateReports(data);
 
             // 2. Save to Firestore
-            // Check if online/guest
             try {
                 await addDoc(collection(db, "inspections"), data);
-                alert("Reports generated and saved to History!");
-            } catch (err) {
-                console.warn("Could not save to DB (Guest/Offline):", err);
-                alert("Reports generated! (Not saved to history in Guest Mode)");
+                // Update Dashboard immediately
+                loadDashboardStats();
+            } catch (e) {
+                console.error("Could not save to DB (Guest/Offline):", e);
+                // Still allow report generation even if save fails
             }
 
-            e.target.reset();
-            window.nextStep(1);
-            document.querySelector('[data-view="dashboard"]').click();
-            loadDashboardData(); // Refresh dashboard
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+
+            // Show success message
+            alert("Reports generated successfully! Check your downloads folder.");
 
         } catch (error) {
             console.error(error);
@@ -518,6 +514,40 @@ async function generateReports(data) {
 
     if (errorMessages.length > 0) {
         alert(`Some reports failed to generate:\n\n${errorMessages.join('\n')}\n\nPlease check the Word templates for syntax errors (e.g. missing braces).`);
+    }
+}
+
+// --- Dashboard Logic ---
+async function loadDashboardStats() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "inspections"));
+        const total = querySnapshot.size;
+
+        let high = 0;
+        let medium = 0;
+        let low = 0;
+
+        querySnapshot.forEach((doc) => {
+            const d = doc.data();
+            // Check risk_rating (A=High, B=Medium, C=Low)
+            if (d.risk_rating === 'A') high++;
+            else if (d.risk_rating === 'B') medium++;
+            else low++; // Default or 'C'
+        });
+
+        // Update UI
+        const totalEl = document.getElementById('total-inspections');
+        const highEl = document.getElementById('high-risk-count');
+        const mediumEl = document.getElementById('medium-risk-count');
+        const lowEl = document.getElementById('low-risk-count');
+
+        if (totalEl) totalEl.textContent = total;
+        if (highEl) highEl.textContent = high;
+        if (mediumEl) mediumEl.textContent = medium;
+        if (lowEl) lowEl.textContent = low;
+
+    } catch (error) {
+        console.log("Dashboard load error (likely offline):", error);
     }
 }
 
