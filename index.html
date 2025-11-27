@@ -151,7 +151,7 @@
                         <div class="step" data-step="3">3. Review & Submit</div>
                     </div>
 
-                    <form id="inspection-form" class="main-form">
+                    <form id="inspection-form" class="main-form" novalidate>
                         <!-- Step 1: Facility & Personnel Info -->
                         <div class="form-section active" id="section-facility">
                             <h2>Facility & Personnel Information</h2>
@@ -169,31 +169,19 @@
                                     <input type="text" name="facility_address" required placeholder="Full address">
                                 </div>
 
-                                <!-- Personnel Met -->
-                                <h3 class="full-width"
-                                    style="margin-top: 1rem; font-size: 1.1rem; color: var(--primary);">Personnel Met
-                                    During Inspection</h3>
-                                <div class="input-group">
-                                    <label>Name</label>
-                                    <input type="text" name="facility_personnelname" placeholder="Personnel Name">
-                                </div>
-                                <div class="input-group">
-                                    <label>Designation</label>
-                                    <input type="text" name="facility_personneldesignation"
-                                        placeholder="e.g. Superintendent Pharmacist">
-                                </div>
-                                <div class="input-group">
-                                    <label>Qualification</label>
-                                    <input type="text" name="facility_personnelqualification"
-                                        placeholder="e.g. B.Pharm">
-                                </div>
-                                <div class="input-group">
-                                    <label>Phone No.</label>
-                                    <input type="text" name="facility_personnelphoneno" placeholder="Phone Number">
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Email</label>
-                                    <input type="email" name="facility_personnelemail" placeholder="Email Address">
+                                <!-- Personnel Met (Dynamic) -->
+                                <div class="full-width" style="margin-top: 1rem;">
+                                    <h3
+                                        style="font-size: 1.1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+                                        Personnel Met During Inspection
+                                        <button type="button" class="btn-outline" onclick="addPersonnelRow()"
+                                            style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">
+                                            <span class="material-icons-round" style="font-size: 1rem;">add</span> Add
+                                        </button>
+                                    </h3>
+                                    <div id="personnel-container">
+                                        <!-- Dynamic rows -->
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-actions">
@@ -231,12 +219,26 @@
                                 <h4 style="margin-top: 1rem; color: var(--primary);">NAFDAC Inspectors</h4>
                                 <div class="grid-2">
                                     <div class="input-group">
-                                        <label>Lead Inspector Name</label>
-                                        <input type="text" name="lead_inspector" placeholder="Name">
+                                        <label>Lead Inspector</label>
+                                        <select name="lead_inspector">
+                                            <option value="">Select Lead Inspector...</option>
+                                            <option value="Dr. Regina K. Garba">Dr. Regina K. Garba</option>
+                                            <option value="Pharm Mmamel V.N">Pharm Mmamel V.N</option>
+                                            <option value="Pharm. Adesanya Oluwaseun">Pharm. Adesanya Oluwaseun</option>
+                                        </select>
                                     </div>
                                     <div class="input-group">
-                                        <label>Co-Inspector Name</label>
-                                        <input type="text" name="co_inspector" placeholder="Name">
+                                        <label>Co-Inspector</label>
+                                        <select name="co_inspector">
+                                            <option value="">Select Co-Inspector...</option>
+                                            <option value="Mr. Omotuwa Adebayo">Mr. Omotuwa Adebayo</option>
+                                            <option value="Mrs Bisola Roberts">Mrs Bisola Roberts</option>
+                                            <option value="Mr Ifeanyi Okeke">Mr Ifeanyi Okeke</option>
+                                            <option value="Dr. Saad Abubakar">Dr. Saad Abubakar</option>
+                                            <option value="Mr Enilama Emmanuel">Mr Enilama Emmanuel</option>
+                                            <option value="Mr Solomon Emeje">Mr Solomon Emeje</option>
+                                            <option value="Ms Adegbite Mary">Ms Adegbite Mary</option>
+                                        </select>
                                     </div>
                                     <div class="input-group">
                                         <label>Trainee Inspector 1</label>
@@ -248,8 +250,17 @@
                                     </div>
                                     <div class="input-group full-width">
                                         <label>Designation (Common)</label>
-                                        <input type="text" name="designation" value="Regulatory Officer"
-                                            placeholder="e.g. Regulatory Officer">
+                                        <select name="designation">
+                                            <option value="Regulatory Officer">Regulatory Officer</option>
+                                            <option value="DD">DD</option>
+                                            <option value="AD">AD</option>
+                                            <option value="CRO">CRO</option>
+                                            <option value="ACRO">ACRO</option>
+                                            <option value="PRO">PRO</option>
+                                            <option value="SRO">SRO</option>
+                                            <option value="ROI">ROI</option>
+                                            <option value="ROII">ROII</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -280,7 +291,7 @@
                                     </div>
                                     <div class="input-group full-width">
                                         <label>Adherence to Licensing?</label>
-                                        <select name="Yes/No">
+                                        <select name="licensing_adherence">
                                             <option value="Yes">Yes</option>
                                             <option value="No">No</option>
                                         </select>

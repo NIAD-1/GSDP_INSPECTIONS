@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
     setupFormNavigation();
     setupFindingsLogic();
+    setupPersonnelLogic();
     setupFormSubmission();
 
     // Listen for login to load data
@@ -119,6 +120,49 @@ function setupFindingsLogic() {
     window.addFindingRow();
 }
 
+// --- Dynamic Personnel Logic ---
+function setupPersonnelLogic() {
+    window.addPersonnelRow = () => {
+        const container = document.getElementById('personnel-container');
+        const row = document.createElement('div');
+        row.className = 'grid-2';
+        row.style.borderBottom = '1px solid var(--border)';
+        row.style.paddingBottom = '1rem';
+        row.style.marginBottom = '1rem';
+        row.innerHTML = `
+            <div class="input-group">
+                <label>Name</label>
+                <input type="text" class="p-name" placeholder="Personnel Name">
+            </div>
+            <div class="input-group">
+                <label>Designation</label>
+                <input type="text" class="p-designation" placeholder="e.g. Superintendent Pharmacist">
+            </div>
+            <div class="input-group">
+                <label>Qualification</label>
+                <input type="text" class="p-qualification" placeholder="e.g. B.Pharm">
+            </div>
+            <div class="input-group">
+                <label>Phone No.</label>
+                <input type="text" class="p-phone" placeholder="Phone Number">
+            </div>
+            <div class="input-group full-width" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <div style="flex: 1;">
+                    <label>Email</label>
+                    <input type="email" class="p-email" placeholder="Email Address">
+                </div>
+                <button type="button" class="btn-outline" onclick="this.parentElement.parentElement.remove()" style="color: red; border-color: red; height: 42px;">
+                    <span class="material-icons-round">delete</span>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+    };
+
+    // Add initial row
+    window.addPersonnelRow();
+}
+
 function updateReviewSummary() {
     const form = document.getElementById('inspection-form');
     const formData = new FormData(form);
@@ -133,6 +177,10 @@ function updateReviewSummary() {
         <div class="stat-card" style="margin-top: 1rem">
             <h3>Findings Recorded</h3>
             <p>${document.querySelectorAll('.finding-row').length} items</p>
+        </div>
+        <div class="stat-card" style="margin-top: 1rem">
+            <h3>Personnel Recorded</h3>
+            <p>${document.querySelectorAll('#personnel-container .grid-2').length} people</p>
         </div>
     `;
 }
@@ -161,6 +209,29 @@ function setupFormSubmission() {
                 });
             });
 
+            // Gather personnel
+            const personnel = [];
+            document.querySelectorAll('#personnel-container .grid-2').forEach(row => {
+                personnel.push({
+                    name: row.querySelector('.p-name').value,
+                    designation: row.querySelector('.p-designation').value,
+                    qualification: row.querySelector('.p-qualification').value,
+                    phone: row.querySelector('.p-phone').value,
+                    email: row.querySelector('.p-email').value
+                });
+            });
+
+            // Map personnel to flat fields for template if needed (e.g. first person)
+            if (personnel.length > 0) {
+                data.facility_personnelname = personnel[0].name;
+                data.facility_personneldesignation = personnel[0].designation;
+                data.facility_personnelqualification = personnel[0].qualification;
+                data.facility_personnelphoneno = personnel[0].phone;
+                data.facility_personnelemail = personnel[0].email;
+            }
+            // Also pass full list for templates that support loops
+            data.personnel_list = personnel;
+
             data.findings = findings;
             data.has_critical = findings.some(f => f.classification === 'Critical');
             data.has_major = findings.some(f => f.classification === 'Major');
@@ -177,9 +248,14 @@ function setupFormSubmission() {
             await generateReports(data);
 
             // 2. Save to Firestore
-            await addDoc(collection(db, "inspections"), data);
-
-            alert("Reports generated and saved to History!");
+            // Check if online/guest
+            try {
+                await addDoc(collection(db, "inspections"), data);
+                alert("Reports generated and saved to History!");
+            } catch (err) {
+                console.warn("Could not save to DB (Guest/Offline):", err);
+                alert("Reports generated! (Not saved to history in Guest Mode)");
+            }
 
             e.target.reset();
             window.nextStep(1);
@@ -204,7 +280,11 @@ async function generateReports(data) {
     };
 
     const renderTemplate = (content, data, outputName) => {
-        const zip = new window.PizZip(content);
+        // Fix PizZip usage
+        const PizZipConstructor = window.PizZip || PizZip;
+        if (!PizZipConstructor) throw new Error("PizZip library not loaded");
+
+        const zip = new PizZipConstructor(content);
         const doc = new window.docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
