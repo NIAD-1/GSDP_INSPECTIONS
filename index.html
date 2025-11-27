@@ -146,15 +146,17 @@
                 <!-- New Inspection View -->
                 <div id="view-new-inspection" class="view">
                     <div class="form-stepper">
-                        <div class="step active" data-step="1">1. Facility Info</div>
-                        <div class="step" data-step="2">2. Inspection Data</div>
-                        <div class="step" data-step="3">3. Review & Submit</div>
+                        <div class="step active" data-step="1">1. Facility & Inspectors</div>
+                        <div class="step" data-step="2">2. Inspection Details</div>
+                        <div class="step" data-step="3">3. Findings & Risk</div>
+                        <div class="step" data-step="4">4. Conclusion & Report</div>
                     </div>
 
                     <form id="inspection-form" class="main-form" novalidate>
-                        <!-- Step 1: Facility & Personnel Info -->
-                        <div class="form-section active" id="section-facility">
-                            <h2>Facility & Personnel Information</h2>
+
+                        <!-- Step 1: Facility & Inspectors -->
+                        <div class="form-section active" id="section-1">
+                            <h2>Facility Information</h2>
                             <div class="grid-2">
                                 <div class="input-group">
                                     <label>Facility Name</label>
@@ -168,35 +170,151 @@
                                     <label>Facility Address</label>
                                     <input type="text" name="facility_address" required placeholder="Full address">
                                 </div>
+                            </div>
 
-                                <!-- Personnel Met (Dynamic) -->
-                                <div class="full-width" style="margin-top: 1rem;">
-                                    <h3
-                                        style="font-size: 1.1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
-                                        Personnel Met During Inspection
-                                        <button type="button" class="btn-outline" onclick="addPersonnelRow()"
-                                            style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">
-                                            <span class="material-icons-round" style="font-size: 1rem;">add</span> Add
-                                        </button>
-                                    </h3>
-                                    <div id="personnel-container">
-                                        <!-- Dynamic rows -->
-                                    </div>
+                            <!-- Personnel Met -->
+                            <div class="full-width" style="margin-top: 2rem;">
+                                <h3
+                                    style="font-size: 1.1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+                                    Personnel Met During Inspection
+                                    <button type="button" class="btn-outline" onclick="addPersonnelRow()"
+                                        style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">
+                                        <span class="material-icons-round" style="font-size: 1rem;">add</span> Add
+                                    </button>
+                                </h3>
+                                <div id="personnel-container"></div>
+                            </div>
+
+                            <!-- Inspectors -->
+                            <h2 style="margin-top: 2rem;">NAFDAC Inspectors</h2>
+                            <div class="grid-2">
+                                <div class="input-group">
+                                    <label>Lead Inspector</label>
+                                    <select name="lead_inspector">
+                                        <option value="">Select Lead Inspector...</option>
+                                        <option value="Dr. Regina K. Garba">Dr. Regina K. Garba</option>
+                                        <option value="Pharm Mmamel V.N">Pharm Mmamel V.N</option>
+                                        <option value="Pharm. Adesanya Oluwaseun">Pharm. Adesanya Oluwaseun</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>Co-Inspector</label>
+                                    <select name="co_inspector">
+                                        <option value="">Select Co-Inspector...</option>
+                                        <option value="Mr. Omotuwa Adebayo">Mr. Omotuwa Adebayo</option>
+                                        <option value="Mrs Bisola Roberts">Mrs Bisola Roberts</option>
+                                        <option value="Mr Ifeanyi Okeke">Mr Ifeanyi Okeke</option>
+                                        <option value="Dr. Saad Abubakar">Dr. Saad Abubakar</option>
+                                        <option value="Mr Enilama Emmanuel">Mr Enilama Emmanuel</option>
+                                        <option value="Mr Solomon Emeje">Mr Solomon Emeje</option>
+                                        <option value="Ms Adegbite Mary">Ms Adegbite Mary</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>Trainee Inspector 1</label>
+                                    <input type="text" name="trainee_inspector" placeholder="Name">
+                                </div>
+                                <div class="input-group">
+                                    <label>Trainee Inspector 2</label>
+                                    <input type="text" name="trainee_inspector_2" placeholder="Name">
+                                </div>
+                                <div class="input-group full-width">
+                                    <label>Designation (Common)</label>
+                                    <select name="designation">
+                                        <option value="Regulatory Officer">Regulatory Officer</option>
+                                        <option value="DD">DD</option>
+                                        <option value="AD">AD</option>
+                                        <option value="CRO">CRO</option>
+                                        <option value="ACRO">ACRO</option>
+                                        <option value="PRO">PRO</option>
+                                        <option value="SRO">SRO</option>
+                                        <option value="ROI">ROI</option>
+                                        <option value="ROII">ROII</option>
+                                    </select>
                                 </div>
                             </div>
+
                             <div class="form-actions">
                                 <button type="button" class="btn-primary" onclick="nextStep(2)">Next: Inspection
-                                    Data</button>
+                                    Details</button>
                             </div>
                         </div>
 
-                        <!-- Step 2: Inspection Data -->
-                        <div class="form-section" id="section-data">
+                        <!-- Step 2: Inspection Details -->
+                        <div class="form-section" id="section-2">
+                            <h2>Inspection Details</h2>
+
+                            <!-- Introduction & Scope -->
+                            <h4 style="margin-top: 1rem; color: var(--primary);">Introduction & Scope</h4>
+                            <div class="input-group full-width">
+                                <label>Introduction</label>
+                                <textarea name="introduction" rows="3" placeholder="Brief introduction..."></textarea>
+                            </div>
+                            <div class="input-group full-width">
+                                <label>Inspected Areas</label>
+                                <textarea name="inspected_areas" rows="2"
+                                    placeholder="List areas inspected..."></textarea>
+                            </div>
+
+                            <!-- Licensing -->
+                            <h4 style="margin-top: 1rem; color: var(--primary);">Licensing</h4>
+                            <div class="grid-2">
+                                <div class="input-group">
+                                    <label>Premises License Info</label>
+                                    <input type="text" name="licence_info" placeholder="License details">
+                                </div>
+                                <div class="input-group">
+                                    <label>Superintendent License Info</label>
+                                    <input type="text" name="superintendent_licence_info" placeholder="License details">
+                                </div>
+                                <div class="input-group full-width">
+                                    <label>Adherence to Licensing?</label>
+                                    <select name="licensing_adherence">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Observations -->
+                            <h4 style="margin-top: 1rem; color: var(--primary);">Detailed Observations</h4>
+                            <div class="input-group full-width">
+                                <label>Activities Undertaken</label>
+                                <textarea name="activities_info" rows="2"></textarea>
+                            </div>
+                            <div class="input-group full-width">
+                                <label>Adequacy of Premises</label>
+                                <textarea name="premises_adequacy_info" rows="2"></textarea>
+                            </div>
+                            <div class="input-group full-width">
+                                <label>Warehouse(s)</label>
+                                <textarea name="warehouse_info" rows="2"></textarea>
+                            </div>
+                            <div class="input-group full-width">
+                                <label>Special Storage</label>
+                                <textarea name="special_storage_info" rows="2"></textarea>
+                            </div>
+                            <div class="input-group full-width">
+                                <label>Documentation & Record Keeping</label>
+                                <textarea name="documentation_info" rows="2"></textarea>
+                            </div>
+                            <div class="input-group full-width">
+                                <label>Distribution & Shipment</label>
+                                <textarea name="distribution_info" rows="2"></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-outline" onclick="prevStep(1)">Back</button>
+                                <button type="button" class="btn-primary" onclick="nextStep(3)">Next: Findings &
+                                    Risk</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Findings & Risk -->
+                        <div class="form-section" id="section-3">
                             <div class="tabs">
                                 <button type="button" class="tab active" onclick="switchTab('gsdp')">GSDP
                                     Findings</button>
-                                <button type="button" class="tab" onclick="switchTab('details')">Inspection
-                                    Details</button>
                                 <button type="button" class="tab" onclick="switchTab('risk')">Risk Assessment</button>
                             </div>
 
@@ -209,121 +327,6 @@
                                 <button type="button" class="btn-secondary" onclick="addFindingRow()">
                                     <span class="material-icons-round">add</span> Add Finding
                                 </button>
-                            </div>
-
-                            <!-- Inspection Details Tab (New) -->
-                            <div id="tab-details" class="tab-content">
-                                <h3>Inspection Details</h3>
-
-                                <!-- Inspectors -->
-                                <h4 style="margin-top: 1rem; color: var(--primary);">NAFDAC Inspectors</h4>
-                                <div class="grid-2">
-                                    <div class="input-group">
-                                        <label>Lead Inspector</label>
-                                        <select name="lead_inspector">
-                                            <option value="">Select Lead Inspector...</option>
-                                            <option value="Dr. Regina K. Garba">Dr. Regina K. Garba</option>
-                                            <option value="Pharm Mmamel V.N">Pharm Mmamel V.N</option>
-                                            <option value="Pharm. Adesanya Oluwaseun">Pharm. Adesanya Oluwaseun</option>
-                                        </select>
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Co-Inspector</label>
-                                        <select name="co_inspector">
-                                            <option value="">Select Co-Inspector...</option>
-                                            <option value="Mr. Omotuwa Adebayo">Mr. Omotuwa Adebayo</option>
-                                            <option value="Mrs Bisola Roberts">Mrs Bisola Roberts</option>
-                                            <option value="Mr Ifeanyi Okeke">Mr Ifeanyi Okeke</option>
-                                            <option value="Dr. Saad Abubakar">Dr. Saad Abubakar</option>
-                                            <option value="Mr Enilama Emmanuel">Mr Enilama Emmanuel</option>
-                                            <option value="Mr Solomon Emeje">Mr Solomon Emeje</option>
-                                            <option value="Ms Adegbite Mary">Ms Adegbite Mary</option>
-                                        </select>
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Trainee Inspector 1</label>
-                                        <input type="text" name="trainee_inspector" placeholder="Name">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Trainee Inspector 2</label>
-                                        <input type="text" name="trainee_inspector_2" placeholder="Name">
-                                    </div>
-                                    <div class="input-group full-width">
-                                        <label>Designation (Common)</label>
-                                        <select name="designation">
-                                            <option value="Regulatory Officer">Regulatory Officer</option>
-                                            <option value="DD">DD</option>
-                                            <option value="AD">AD</option>
-                                            <option value="CRO">CRO</option>
-                                            <option value="ACRO">ACRO</option>
-                                            <option value="PRO">PRO</option>
-                                            <option value="SRO">SRO</option>
-                                            <option value="ROI">ROI</option>
-                                            <option value="ROII">ROII</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Introduction & Scope -->
-                                <h4 style="margin-top: 1rem; color: var(--primary);">Introduction & Scope</h4>
-                                <div class="input-group full-width">
-                                    <label>Introduction</label>
-                                    <textarea name="introduction" rows="3"
-                                        placeholder="Brief introduction..."></textarea>
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Inspected Areas</label>
-                                    <textarea name="inspected_areas" rows="2"
-                                        placeholder="List areas inspected..."></textarea>
-                                </div>
-
-                                <!-- Licensing -->
-                                <h4 style="margin-top: 1rem; color: var(--primary);">Licensing</h4>
-                                <div class="grid-2">
-                                    <div class="input-group">
-                                        <label>Premises License Info</label>
-                                        <input type="text" name="licence_info" placeholder="License details">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Superintendent License Info</label>
-                                        <input type="text" name="superintendent_licence_info"
-                                            placeholder="License details">
-                                    </div>
-                                    <div class="input-group full-width">
-                                        <label>Adherence to Licensing?</label>
-                                        <select name="licensing_adherence">
-                                            <option value="Yes">Yes</option>
-                                            <option value="No">No</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Detailed Observations -->
-                                <h4 style="margin-top: 1rem; color: var(--primary);">Detailed Observations</h4>
-                                <div class="input-group full-width">
-                                    <label>Activities Undertaken</label>
-                                    <textarea name="activities_info" rows="2"></textarea>
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Adequacy of Premises</label>
-                                    <textarea name="premises_adequacy_info" rows="2"></textarea>
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Warehouse(s)</label>
-                                    <textarea name="warehouse_info" rows="2"></textarea>
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Special Storage</label>
-                                    <textarea name="special_storage_info" rows="2"></textarea>
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Documentation & Record Keeping</label>
-                                    <textarea name="documentation_info" rows="2"></textarea>
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Distribution & Shipment</label>
-                                    <textarea name="distribution_info" rows="2"></textarea>
-                                </div>
                             </div>
 
                             <!-- Risk Tab -->
@@ -342,36 +345,35 @@
                             </div>
 
                             <div class="form-actions">
-                                <button type="button" class="btn-outline" onclick="prevStep(1)">Back</button>
-                                <button type="button" class="btn-primary" onclick="nextStep(3)">Next: Review</button>
+                                <button type="button" class="btn-outline" onclick="prevStep(2)">Back</button>
+                                <button type="button" class="btn-primary" onclick="nextStep(4)">Next:
+                                    Conclusion</button>
                             </div>
                         </div>
 
-                        <!-- Step 3: Review -->
-                        <div class="form-section" id="section-review">
-                            <h2>Review & Generate</h2>
-                            <p>Please review the information before generating reports.</p>
+                        <!-- Step 4: Conclusion & Report -->
+                        <div class="form-section" id="section-4">
+                            <h2>Conclusion & Report</h2>
 
-                            <div class="review-summary">
-                                <!-- Summary injected by JS -->
-                            </div>
-
-                            <!-- Final Recommendations & Summary -->
-                            <div class="grid-1" style="margin-top: 2rem;">
+                            <div class="grid-1">
                                 <div class="input-group full-width">
                                     <label>Recommendations</label>
-                                    <textarea name="recommendations" rows="3"
+                                    <textarea name="recommendations" rows="4"
                                         placeholder="Final recommendations..."></textarea>
                                 </div>
                                 <div class="input-group full-width">
                                     <label>Summary & Conclusions</label>
-                                    <textarea name="summary_conclusion" rows="3"
+                                    <textarea name="summary_conclusion" rows="4"
                                         placeholder="Overall summary..."></textarea>
                                 </div>
                             </div>
 
+                            <div class="review-summary" style="margin-top: 2rem;">
+                                <!-- Summary injected by JS -->
+                            </div>
+
                             <div class="form-actions">
-                                <button type="button" class="btn-outline" onclick="prevStep(2)">Back</button>
+                                <button type="button" class="btn-outline" onclick="prevStep(3)">Back</button>
                                 <button type="submit" class="btn-primary">
                                     <span class="material-icons-round">description</span> Generate Reports & Save
                                 </button>

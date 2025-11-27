@@ -58,13 +58,17 @@ function setupFormNavigation() {
         document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
 
-        const sections = ['section-facility', 'section-data', 'section-review'];
-        document.getElementById(sections[step - 1]).classList.add('active');
+        // Map steps to section IDs
+        const sections = ['section-1', 'section-2', 'section-3', 'section-4'];
+        const sectionId = sections[step - 1];
 
-        document.querySelector(`.step[data-step="${step}"]`).classList.add('active');
-        state.currentStep = step;
+        if (sectionId) {
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`.step[data-step="${step}"]`).classList.add('active');
+            state.currentStep = step;
+        }
 
-        if (step === 3) updateReviewSummary();
+        if (step === 4) updateReviewSummary();
     };
 
     window.prevStep = (step) => {
