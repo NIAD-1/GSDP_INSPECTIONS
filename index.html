@@ -18,8 +18,8 @@
     <link rel="stylesheet" href="styles.css">
 
     <!-- Libraries -->
-    <!-- PizZip for zipping/unzipping files (needed for docxtemplater) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <!-- PizZip (Reliable CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
     <!-- Docxtemplater for Word generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
     <!-- FileSaver for saving files -->
@@ -187,9 +187,12 @@
 
                             <!-- Inspectors -->
                             <h2 style="margin-top: 2rem;">NAFDAC Inspectors</h2>
-                            <div class="grid-2">
+
+                            <!-- Lead Inspector -->
+                            <div class="grid-2"
+                                style="margin-bottom: 1rem; border-bottom: 1px dashed var(--border); padding-bottom: 1rem;">
                                 <div class="input-group">
-                                    <label>Lead Inspector</label>
+                                    <label>Lead Inspector Name</label>
                                     <select name="lead_inspector">
                                         <option value="">Select Lead Inspector...</option>
                                         <option value="Dr. Regina K. Garba">Dr. Regina K. Garba</option>
@@ -198,7 +201,26 @@
                                     </select>
                                 </div>
                                 <div class="input-group">
-                                    <label>Co-Inspector</label>
+                                    <label>Lead Inspector Rank</label>
+                                    <select name="lead_inspector_designation">
+                                        <option value="">Select Rank...</option>
+                                        <option value="DD">DD</option>
+                                        <option value="AD">AD</option>
+                                        <option value="CRO">CRO</option>
+                                        <option value="ACRO">ACRO</option>
+                                        <option value="PRO">PRO</option>
+                                        <option value="SRO">SRO</option>
+                                        <option value="ROI">ROI</option>
+                                        <option value="ROII">ROII</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Co-Inspector -->
+                            <div class="grid-2"
+                                style="margin-bottom: 1rem; border-bottom: 1px dashed var(--border); padding-bottom: 1rem;">
+                                <div class="input-group">
+                                    <label>Co-Inspector Name</label>
                                     <select name="co_inspector">
                                         <option value="">Select Co-Inspector...</option>
                                         <option value="Mr. Omotuwa Adebayo">Mr. Omotuwa Adebayo</option>
@@ -211,23 +233,43 @@
                                     </select>
                                 </div>
                                 <div class="input-group">
-                                    <label>Trainee Inspector 1</label>
-                                    <input type="text" name="trainee_inspector" placeholder="Name">
-                                </div>
-                                <div class="input-group">
-                                    <label>Trainee Inspector 2</label>
-                                    <input type="text" name="trainee_inspector_2" placeholder="Name">
-                                </div>
-                                <div class="input-group full-width">
-                                    <label>Designation (Common)</label>
-                                    <select name="designation">
-                                        <option value="Regulatory Officer">Regulatory Officer</option>
+                                    <label>Co-Inspector Rank</label>
+                                    <select name="co_inspector_designation">
+                                        <option value="">Select Rank...</option>
                                         <option value="DD">DD</option>
                                         <option value="AD">AD</option>
                                         <option value="CRO">CRO</option>
                                         <option value="ACRO">ACRO</option>
                                         <option value="PRO">PRO</option>
                                         <option value="SRO">SRO</option>
+                                        <option value="ROI">ROI</option>
+                                        <option value="ROII">ROII</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Trainees -->
+                            <div class="grid-2">
+                                <div class="input-group">
+                                    <label>Trainee Inspector 1</label>
+                                    <input type="text" name="trainee_inspector" placeholder="Name">
+                                </div>
+                                <div class="input-group">
+                                    <label>Trainee 1 Rank</label>
+                                    <select name="trainee_inspector_designation">
+                                        <option value="Regulatory Officer">Regulatory Officer</option>
+                                        <option value="ROI">ROI</option>
+                                        <option value="ROII">ROII</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>Trainee Inspector 2</label>
+                                    <input type="text" name="trainee_inspector_2" placeholder="Name">
+                                </div>
+                                <div class="input-group">
+                                    <label>Trainee 2 Rank</label>
+                                    <select name="trainee_inspector_2_designation">
+                                        <option value="Regulatory Officer">Regulatory Officer</option>
                                         <option value="ROI">ROI</option>
                                         <option value="ROII">ROII</option>
                                     </select>

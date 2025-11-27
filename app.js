@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPersonnelLogic();
     setupFormSubmission();
 
+    // Check for PizZip
+    if (!window.PizZip) {
+        console.error("PizZip not loaded!");
+        alert("Warning: Report generation library (PizZip) failed to load. Please check your internet connection and refresh.");
+    }
+
     // Listen for login to load data
     window.addEventListener('user-logged-in', () => {
         loadDashboardData();
@@ -76,14 +82,14 @@ function setupFormNavigation() {
     };
 
     window.switchTab = (tabName) => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => {
+            t.classList.remove('active');
+            if (t.getAttribute('onclick').includes(tabName)) {
+                t.classList.add('active');
+            }
+        });
+
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-        const tabs = document.querySelectorAll('.tab');
-        if (tabName === 'gsdp') tabs[0].classList.add('active');
-        else if (tabName === 'details') tabs[1].classList.add('active');
-        else tabs[2].classList.add('active');
-
         document.getElementById(`tab-${tabName}`).classList.add('active');
     };
 }
@@ -285,7 +291,7 @@ async function generateReports(data) {
 
     const renderTemplate = (content, data, outputName) => {
         // Fix PizZip usage
-        const PizZipConstructor = window.PizZip || PizZip;
+        const PizZipConstructor = window.PizZip;
         if (!PizZipConstructor) throw new Error("PizZip library not loaded");
 
         const zip = new PizZipConstructor(content);
