@@ -173,16 +173,18 @@
                             </div>
 
                             <!-- Personnel Met -->
-                            <div class="full-width" style="margin-top: 2rem;">
+                            <div class="full-width" style="margin-top: 1rem;">
                                 <h3
-                                    style="font-size: 1.1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                     Personnel Met During Inspection
-                                    <button type="button" class="btn-outline" onclick="addPersonnelRow()"
-                                        style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">
-                                        <span class="material-icons-round" style="font-size: 1rem;">add</span> Add
-                                    </button>
                                 </h3>
-                                <div id="personnel-container"></div>
+                                <div id="personnel-container">
+                                    <!-- Dynamic rows -->
+                                </div>
+                                <button type="button" class="btn-outline full-width" onclick="addPersonnelRow()"
+                                    style="margin-top: 1rem; border-style: dashed;">
+                                    <span class="material-icons-round">add</span> Add Personnel
+                                </button>
                             </div>
 
                             <!-- Inspectors -->

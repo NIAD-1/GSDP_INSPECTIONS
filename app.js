@@ -353,12 +353,83 @@ function setupFormSubmission() {
             data.has_critical = findings.some(f => f.classification === 'Critical');
             data.has_major = findings.some(f => f.classification === 'Major');
 
-            // Create Summary Lists for Letter Templates
+            // Create Summary Lists for Letter Templates (Bulleted Strings)
             const majorList = findings.filter(f => f.classification === 'Critical' || f.classification === 'Major');
             const otherList = findings.filter(f => f.classification !== 'Critical' && f.classification !== 'Major');
 
-            data.major_findings = majorList.map(f => `• ${f.observation}`).join('\n') || "Nil";
-            data.other_findings = otherList.map(f => `• ${f.observation}`).join('\n') || "Nil";
+            // --- Grouped Findings for CAPA & Report Tables (Numbered) ---
+            const formatGrouped = (list) => {
+                if (list.length === 0) return "Nil";
+                return list.map((f, i) => {
+                    // Remove the first bullet if present, so the number takes its place
+                    let text = f.observation;
+                    if (text.startsWith('• ')) {
+                        text = text.substring(2);
+                    }
+                    return `${i + 1}. ${text}`;
+                }).join('\n');
+            };
+
+            // Apply Numbered Format to Letter Summaries too
+            data.major_findings = formatGrouped(majorList);
+            data.other_findings = formatGrouped(otherList);
+
+            data.critical_findings_grouped = formatGrouped(findings.filter(f => f.classification === 'Critical'));
+            data.major_findings_grouped = formatGrouped(findings.filter(f => f.classification === 'Major'));
+            data.other_findings_grouped = formatGrouped(findings.filter(f => f.classification !== 'Critical' && f.classification !== 'Major'));
+
+            // --- Grouped Guidelines (for Report Table References) ---
+            // Matches the numbered order of the findings above
+            const formatGuidelines = (list) => {
+                if (list.length === 0) return "Nil";
+                return list.map((f, i) => `${i + 1}. ${f.guideline}`).join('\n');
+            };
+
+            data.critical_guidelines_grouped = formatGuidelines(findings.filter(f => f.classification === 'Critical'));
+            data.major_guidelines_grouped = formatGuidelines(findings.filter(f => f.classification === 'Major'));
+            data.other_guidelines_grouped = formatGuidelines(findings.filter(f => f.classification !== 'Critical' && f.classification !== 'Major'));
+
+            // --- Risk Categorization Logic ---
+            let riskScore = 1; // Default Low
+            let riskRating = "C"; // Default Low
+
+            if (data.has_critical) {
+                riskScore = 3; // High
+                riskRating = "A";
+            } else if (data.has_major) {
+                riskScore = 2; // Medium
+                riskRating = "B";
+            }
+
+            data.risk_score = riskScore;
+            data.risk_rating = riskRating;
+
+            // "Circle One" Indicators (using text brackets)
+            data.risk_circle_1 = riskScore === 1 ? "[ X ]" : "[   ]";
+            data.risk_circle_2 = riskScore === 2 ? "[ X ]" : "[   ]";
+            data.risk_circle_3 = riskScore === 3 ? "[ X ]" : "[   ]";
+
+            // --- Aliases for Risk Categorization Template (Matching User's Screenshots) ---
+            data.lead_inspectors = data.lead_inspector;
+            data.co_inspectors = data.co_inspector;
+            data.trainee_inspectors = data.trainee_inspector; // For the first trainee
+            // Note: Template shows two trainee slots, we might need a specific alias for the second if they use the same tag.
+            // But usually docxtemplater with same tag repeats the value. 
+            // If they have {trainee_inspectors} twice, it will show the same name unless we map distinct keys.
+            // Let's map the second one if available, but the template likely needs distinct tags or a loop.
+            // For now, we'll map the plural to the singular.
+
+            data.licence_info = data.premise_license_number;
+            data.superintendent_licence_info = data.superintendent_license_number;
+            data.operations = data.operations_carried_out;
+
+            // Risk Score Aliases (User's template uses risk_score_1, etc for checkboxes)
+            data.risk_score_1 = data.risk_circle_1;
+            data.risk_score_2 = data.risk_circle_2;
+            data.risk_score_3 = data.risk_circle_3;
+
+            // Last Inspection Date (Not currently in form, defaulting to "N/A")
+            data.last_inspection_date = "N/A";
 
             data.timestamp = Timestamp.now();
             data.status = "Completed";
