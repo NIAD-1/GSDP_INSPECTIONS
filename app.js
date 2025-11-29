@@ -1,6 +1,6 @@
 // app.js
 import { setupAuth } from './auth.js';
-import { db, collection, addDoc, getDocs, query, orderBy, Timestamp } from './firebase-init.js';
+import { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, getDocs, query, orderBy, Timestamp, deleteDoc, doc } from './firebase-init.js';
 
 // --- State Management ---
 const state = {
@@ -447,26 +447,64 @@ function setupFormSubmission() {
             // 1. Generate Reports
             await generateReports(data);
 
-            // 2. Save to Firestore
+            // 2. Save to Firestore (with Local Storage Fallback)
             try {
-                await addDoc(collection(db, "inspections"), data);
-                // Update Dashboard immediately
-                loadDashboardStats();
+                if (state.editMode && state.editSource === 'firestore') {
+                    // Update existing doc
+                    await updateDoc(doc(db, "inspections", state.editId), data);
+                    console.log("Updated Firestore Doc");
+                    alert("Inspection Updated Successfully!");
+                } else if (state.editMode && state.editSource === 'local') {
+                    // Update local storage
+                    const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
+                    const index = parseInt(state.editId.split('_')[1]);
+                    if (!isNaN(index)) {
+                        localData[index] = data;
+                        localStorage.setItem('inspections_local', JSON.stringify(localData));
+                        alert("Inspection Updated Locally!");
+                    }
+                } else {
+                    // Create New
+                    await addDoc(collection(db, "inspections"), data);
+                    console.log("Saved to Firestore");
+                }
             } catch (e) {
-                console.error("Could not save to DB (Guest/Offline):", e);
-                // Still allow report generation even if save fails
+                console.warn("Firestore save/update failed (Offline/No DB), saving to Local Storage:", e);
+
+                // Fallback: If update failed, or new save failed
+                const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
+
+                if (state.editMode) {
+                    // If we were trying to edit a firestore doc but failed, we can't easily "update" it offline 
+                    // without complex sync. For now, let's save as a NEW local copy to prevent data loss.
+                    localData.push(data);
+                    alert("Note: Could not update online database. Saved as a NEW local copy instead.");
+                } else {
+                    localData.push(data);
+                    alert("Note: Database not connected. Saved to Local Browser Storage instead.");
+                }
+                localStorage.setItem('inspections_local', JSON.stringify(localData));
             }
+
+            // Reset Edit Mode
+            state.editMode = false;
+            state.editId = null;
+            state.editSource = null;
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.innerHTML = '<span class="material-icons-round">description</span> Generate Reports & Save';
+
+            // Update Dashboard
+            loadDashboardStats();
 
             btn.disabled = false;
             btn.innerHTML = originalText;
 
             // Show success message
-            alert("Reports generated successfully! Check your downloads folder.");
+            // alert("Reports generated successfully! Check your downloads folder."); // Already alerted above for update
 
         } catch (error) {
-            console.error(error);
+            console.error("Error submitting form:", error);
             alert("Error: " + error.message);
-        } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
@@ -579,15 +617,26 @@ async function loadDashboardData() {
         try {
             const q = query(collection(db, "inspections"), orderBy("timestamp", "desc"));
             const querySnapshot = await getDocs(q);
-            querySnapshot.forEach(doc => allItems.push(doc.data()));
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                data.id = doc.id; // Store ID for delete
+                data.source = 'firestore';
+                allItems.push(data);
+            });
         } catch (dbError) {
             console.warn("Firestore access failed, using local data only.");
         }
 
         // 2. Get Local Storage Data
         const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
-        // Sort local data by timestamp desc (if possible)
-        allItems = [...allItems, ...localData].sort((a, b) => {
+        localData.forEach((item, index) => {
+            item.id = index; // Use index as ID for local
+            item.source = 'local';
+            allItems.push(item);
+        });
+
+        // Sort
+        allItems.sort((a, b) => {
             const tA = a.timestamp && a.timestamp.seconds ? a.timestamp.seconds : (a.timestamp instanceof Date ? a.timestamp.getTime() / 1000 : 0);
             const tB = b.timestamp && b.timestamp.seconds ? b.timestamp.seconds : (b.timestamp instanceof Date ? b.timestamp.getTime() / 1000 : 0);
             return tB - tA;
@@ -606,13 +655,19 @@ async function loadDashboardData() {
                 : (item.inspection_date || "N/A");
             const risk = item.risk_level || (item.risk_rating === 'A' ? 'High' : item.risk_rating === 'B' ? 'Medium' : 'Low');
 
+            // Create unique ID for button actions
+            const uniqueId = item.source === 'firestore' ? item.id : `local_${item.id}`;
+
             const row = `
                 <tr>
                     <td>${item.facility_name}</td>
                     <td>${date}</td>
                     <td><span style="color: ${getRiskColor(risk)}; font-weight: 600;">${risk}</span></td>
                     <td>${item.status || 'Completed'}</td>
-                    <td><button class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">View</button></td>
+                    <td>
+                        <button class="btn-outline" onclick="loadInspectionIntoForm('${uniqueId}', '${item.source}')" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">Edit</button>
+                        <button class="btn-outline" onclick="deleteInspection('${uniqueId}', '${item.source}')" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; color: red; border-color: red;">Delete</button>
+                    </td>
                 </tr>
             `;
             tbody.innerHTML += row;
@@ -627,6 +682,109 @@ async function loadDashboardData() {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error loading data.</td></tr>';
     }
 }
+
+// Global Edit Function
+window.loadInspectionIntoForm = async (id, source) => {
+    try {
+        let data;
+        if (source === 'firestore') {
+            // We need to fetch the single doc again or find it in our list
+            // Fetching is safer
+            // But we don't have getDoc imported. Let's find it in the list we just loaded?
+            // Or just fetch all again? No, let's assume we can find it in the dashboard list if we stored it?
+            // Better: Import getDoc. But for now, let's just use the data we have if we can access it.
+            // Actually, we can just fetch it from the DB using getDocs and filtering, or add getDoc to imports.
+            // Let's add getDoc to imports in next step if needed. 
+            // For now, let's just re-query the collection and find it (inefficient but works without changing imports again yet).
+            const q = query(collection(db, "inspections"));
+            const snapshot = await getDocs(q);
+            snapshot.forEach(doc => {
+                if (doc.id === id) data = doc.data();
+            });
+        } else {
+            const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
+            const index = parseInt(id.split('_')[1]);
+            data = localData[index];
+        }
+
+        if (!data) {
+            alert("Could not load inspection data.");
+            return;
+        }
+
+        // Populate Form
+        // 1. Switch to New Inspection View
+        document.querySelector('[data-view="new-inspection"]').click();
+
+        // 2. Fill Inputs
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            if (data[input.name] !== undefined) {
+                input.value = data[input.name];
+            }
+        });
+
+        // 3. Handle Findings (Dynamic Rows)
+        const findingsContainer = document.getElementById('findings-container');
+        findingsContainer.innerHTML = ''; // Clear existing
+        if (data.findings && Array.isArray(data.findings)) {
+            data.findings.forEach(f => {
+                addFindingRow(f);
+            });
+        }
+
+        // 4. Handle Personnel (Dynamic Rows)
+        const personnelContainer = document.getElementById('personnel-container');
+        personnelContainer.innerHTML = '';
+        if (data.personnel && Array.isArray(data.personnel)) {
+            data.personnel.forEach(p => {
+                addPersonnelRow(p);
+            });
+        }
+
+        // 5. Set Edit Mode Flag
+        state.editMode = true;
+        state.editId = id;
+        state.editSource = source;
+
+        // Change Submit Button Text
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.innerHTML = '<span class="material-icons-round">save</span> Update Inspection';
+
+        alert("Inspection loaded for editing.");
+
+    } catch (error) {
+        console.error("Edit load error:", error);
+        alert("Error loading for edit: " + error.message);
+    }
+};
+
+// Make delete function global
+window.deleteInspection = async (id, source) => {
+    if (!confirm("Are you sure you want to delete this inspection?")) return;
+
+    try {
+        if (source === 'firestore') {
+            await deleteDoc(doc(db, "inspections", id));
+        } else {
+            // Local Storage Delete
+            const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
+            // ID for local is "local_INDEX", so parse index
+            const index = parseInt(id.split('_')[1]);
+            if (!isNaN(index)) {
+                localData.splice(index, 1);
+                localStorage.setItem('inspections_local', JSON.stringify(localData));
+            }
+        }
+
+        alert("Inspection deleted.");
+        loadDashboardData(); // Refresh table
+        loadDashboardStats(); // Refresh stats
+    } catch (error) {
+        console.error("Delete failed:", error);
+        alert("Failed to delete: " + error.message);
+    }
+};
 
 function getRiskColor(level) {
     if (level === 'High') return '#FF1744';
