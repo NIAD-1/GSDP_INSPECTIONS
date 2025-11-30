@@ -448,6 +448,10 @@ function setupFormSubmission() {
             // Also keep individual keys if needed
             data.trainee_inspector_1 = data.trainee_inspector;
 
+            // Map designations for individual trainees
+            data.trainee_designation_1 = data.trainee_inspector_designation;
+            data.trainee_designation_2 = data.trainee_inspector_2_designation;
+
             // data.licence_info is already correct from the form input name="licence_info"
             // data.superintendent_licence_info is already correct from input name="superintendent_licence_info"
 
