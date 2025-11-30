@@ -181,8 +181,8 @@ function updateReviewSummary() {
     summary.innerHTML = `
         <div class="stat-card">
             <h3>Facility</h3>
-            <p>${formData.get('facility_name')}</p>
-            <p style="font-size: 0.9rem; color: var(--text-muted)">${formData.get('inspection_date')}</p>
+            <p>${formData.get('facility_name') || 'N/A'}</p>
+            <p style="font-size: 0.9rem; color: var(--text-muted)">${formData.get('inspection_date') || 'N/A'}</p>
         </div>
         <div class="stat-card" style="margin-top: 1rem">
             <h3>Findings Recorded</h3>
@@ -195,8 +195,117 @@ function updateReviewSummary() {
     `;
 }
 
+// --- Autosave / Persistence Logic ---
+const AUTOSAVE_KEY = 'inspection_form_draft';
+
+function saveFormProgress() {
+    // Don't save if we are in "Edit Mode" (editing an old record), 
+    // or maybe we should? For now, let's only save new drafts to avoid overwriting "Edit" state complexity.
+    // Actually, saving edit progress is good too, but let's stick to simple draft for now.
+    if (state.editMode) return;
+
+    const form = document.getElementById('inspection-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    // Capture dynamic rows manually since FormData might duplicate keys or miss structure
+    // Findings
+    const findings = [];
+    document.querySelectorAll('.finding-row').forEach(row => {
+        findings.push({
+            observation: row.querySelector('.finding-input').value,
+            classification: row.querySelector('.finding-type').value,
+            guideline: row.querySelector('.guideline-output').value
+        });
+    });
+    data.findings = findings;
+
+    // Personnel
+    const personnel = [];
+    document.querySelectorAll('#personnel-container .grid-2').forEach(row => {
+        personnel.push({
+            name: row.querySelector('.p-name').value,
+            designation: row.querySelector('.p-designation').value,
+            qualification: row.querySelector('.p-qualification').value,
+            phone: row.querySelector('.p-phone').value,
+            email: row.querySelector('.p-email').value
+        });
+    });
+    data.personnel = personnel;
+
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
+    // console.log("Draft saved");
+}
+
+function restoreFormProgress() {
+    const saved = localStorage.getItem(AUTOSAVE_KEY);
+    if (!saved) return;
+
+    try {
+        const data = JSON.parse(saved);
+        console.log("Restoring draft...", data);
+
+        // 1. Fill Standard Inputs
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            if (data[input.name] !== undefined) {
+                input.value = data[input.name];
+            }
+        });
+
+        // 2. Restore Findings
+        if (data.findings && data.findings.length > 0) {
+            const container = document.getElementById('findings-container');
+            container.innerHTML = ''; // Clear default
+            data.findings.forEach(f => {
+                // Re-use the global addFindingRow but we need to populate it after
+                // Actually, addFindingRow creates elements. We can create and then fill.
+                // Let's manually recreate to be safe or use the function if accessible.
+                // window.addFindingRow is available.
+                window.addFindingRow();
+                // The new row is the last one
+                const rows = container.querySelectorAll('.finding-row');
+                const lastRow = rows[rows.length - 1];
+                lastRow.querySelector('.finding-input').value = f.observation || '';
+                lastRow.querySelector('.finding-type').value = f.classification || 'Others';
+                lastRow.querySelector('.guideline-output').value = f.guideline || '';
+            });
+        }
+
+        // 3. Restore Personnel
+        if (data.personnel && data.personnel.length > 0) {
+            const container = document.getElementById('personnel-container');
+            container.innerHTML = '';
+            data.personnel.forEach(p => {
+                window.addPersonnelRow();
+                const rows = container.querySelectorAll('.grid-2');
+                const lastRow = rows[rows.length - 1];
+                lastRow.querySelector('.p-name').value = p.name || '';
+                lastRow.querySelector('.p-designation').value = p.designation || '';
+                lastRow.querySelector('.p-qualification').value = p.qualification || '';
+                lastRow.querySelector('.p-phone').value = p.phone || '';
+                lastRow.querySelector('.p-email').value = p.email || '';
+            });
+        }
+
+        // Update summary
+        updateReviewSummary();
+
+    } catch (e) {
+        console.error("Error restoring draft:", e);
+    }
+}
+
 // --- Report Generation & Submission ---
 function setupFormSubmission() {
+    // Attach Autosave Listeners
+    const form = document.getElementById('inspection-form');
+    form.addEventListener('input', saveFormProgress);
+    form.addEventListener('change', saveFormProgress);
+
+    // Restore on load
+    restoreFormProgress();
+
     document.getElementById('inspection-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -516,6 +625,10 @@ function setupFormSubmission() {
             state.editMode = false;
             state.editId = null;
             state.editSource = null;
+
+            // Clear Autosave Draft
+            localStorage.removeItem(AUTOSAVE_KEY);
+
             const submitBtn = document.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.innerHTML = '<span class="material-icons-round">description</span> Generate Reports & Save';
 
