@@ -952,3 +952,96 @@ window.exportToExcel = () => {
     const wb = XLSX.utils.table_to_book(table);
     XLSX.writeFile(wb, "Inspection_History.xlsx");
 };
+
+// --- Bulk Import Logic ---
+window.handleExcelUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            if (jsonData.length === 0) {
+                alert("Excel file is empty or could not be read.");
+                return;
+            }
+
+            let importedCount = 0;
+            const batchPromises = [];
+
+            // Helper to determine risk level from rating or vice versa
+            const getRiskDetails = (row) => {
+                let rating = (row['Risk Rating'] || row['Risk_Rating'] || '').toUpperCase();
+                let level = (row['Risk Level'] || row['Risk_Level'] || '').trim();
+
+                // Normalize Level
+                if (level.toLowerCase().includes('high')) level = 'High';
+                else if (level.toLowerCase().includes('medium')) level = 'Medium';
+                else if (level.toLowerCase().includes('low')) level = 'Low';
+
+                // Infer missing
+                if (rating && !level) {
+                    if (rating === 'A') level = 'High';
+                    else if (rating === 'B') level = 'Medium';
+                    else if (rating === 'C') level = 'Low';
+                } else if (level && !rating) {
+                    if (level === 'High') rating = 'A';
+                    else if (level === 'Medium') rating = 'B';
+                    else if (level === 'Low') rating = 'C';
+                }
+
+                return { rating, level };
+            };
+
+            for (const row of jsonData) {
+                const facilityName = row['Facility Name'] || row['Facility_Name'] || row['Name'];
+                if (!facilityName) continue;
+
+                const { rating, level } = getRiskDetails(row);
+
+                const docData = {
+                    facility_name: facilityName,
+                    risk_rating: rating || 'C',
+                    risk_level: level || 'Low',
+                    status: 'Imported',
+                    timestamp: Timestamp.now(),
+                    source: 'import'
+                };
+
+                // Add to Firestore
+                batchPromises.push(
+                    addDoc(collection(db, "inspections"), docData)
+                        .catch(err => {
+                            console.warn("Firestore import failed, saving local:", err);
+                            // Fallback to local
+                            const localData = JSON.parse(localStorage.getItem('inspections_local') || '[]');
+                            docData.source = 'local_import';
+                            localData.push(docData);
+                            localStorage.setItem('inspections_local', JSON.stringify(localData));
+                        })
+                );
+                importedCount++;
+            }
+
+            await Promise.all(batchPromises);
+
+            alert(`Successfully imported ${importedCount} facilities!`);
+            loadDashboardStats();
+            loadDashboardData(); // Refresh table
+
+            // Reset input
+            event.target.value = '';
+
+        } catch (error) {
+            console.error("Import error:", error);
+            alert("Error importing file: " + error.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+};

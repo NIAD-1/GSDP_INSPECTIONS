@@ -124,9 +124,16 @@
                     <div class="table-section">
                         <div class="table-header">
                             <h2>Company Risk Overview</h2>
-                            <button class="btn-outline" onclick="exportToExcel()">
-                                <span class="material-icons-round">file_download</span> Export Excel
-                            </button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="file" id="excel-upload" accept=".xlsx, .xls" style="display: none;"
+                                    onchange="handleExcelUpload(event)">
+                                <button class="btn-outline" onclick="document.getElementById('excel-upload').click()">
+                                    <span class="material-icons-round">upload_file</span> Import Excel
+                                </button>
+                                <button class="btn-outline" onclick="exportToExcel()">
+                                    <span class="material-icons-round">file_download</span> Export Excel
+                                </button>
+                            </div>
                         </div>
                         <div class="table-wrapper">
                             <table class="data-table">
