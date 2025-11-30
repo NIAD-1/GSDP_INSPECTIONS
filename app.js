@@ -416,6 +416,20 @@ function setupFormSubmission() {
             data.risk_tick_B = riskRating === "B" ? "☑" : "☐";
             data.risk_tick_C = riskRating === "C" ? "☑" : "☐";
 
+            // Calculate Risk Frequency (based on user template)
+            let riskFrequency = "Increased Freq. once in 6 months"; // Default C
+            if (riskRating === "A") {
+                riskFrequency = "Reduced Freq. once in 2yrs";
+            } else if (riskRating === "B") {
+                riskFrequency = "Moderate Freq. Once in a year";
+            }
+            data.risk_frequency = riskFrequency;
+
+            // Map to User's Template Tags (from screenshot)
+            data.risk_score_A = data.risk_tick_A;
+            data.risk_score_B = data.risk_tick_B;
+            data.risk_score_C = data.risk_tick_C;
+
             // Also map old aliases just in case, but encourage new ones
             data.risk_score_1 = data.risk_circle_1;
             data.risk_score_2 = data.risk_circle_2;
@@ -424,7 +438,15 @@ function setupFormSubmission() {
             // --- Aliases for Risk Categorization Template ---
             data.lead_inspectors = data.lead_inspector;
             data.co_inspectors = data.co_inspector;
-            data.trainee_inspectors = data.trainee_inspector;
+
+            // Combine Trainees for the {trainee_inspectors} tag
+            const trainees = [];
+            if (data.trainee_inspector) trainees.push(data.trainee_inspector);
+            if (data.trainee_inspector_2) trainees.push(data.trainee_inspector_2);
+            data.trainee_inspectors = trainees.join(', '); // "Name 1, Name 2"
+
+            // Also keep individual keys if needed
+            data.trainee_inspector_1 = data.trainee_inspector;
 
             // data.licence_info is already correct from the form input name="licence_info"
             // data.superintendent_licence_info is already correct from input name="superintendent_licence_info"
@@ -540,10 +562,17 @@ async function generateReports(data) {
     };
 
     const templates = [
-        { name: 'TEMPLATE.docx', out: `${data.facility_name}_Report.docx` },
-        { name: 'TEMPLATE_1.docx', out: `${data.facility_name}_Report_1.docx` },
-        { name: 'TEMPLATE_2.docx', out: `${data.facility_name}_Report_2.docx` },
-        { name: 'RISK_CATEGORIZATION TEMPLATE.docx', out: `${data.facility_name}_Risk.docx` }
+        // 1. GSDP Report
+        { name: 'TEMPLATE.docx', out: `${data.facility_name} GSDP Report.docx` },
+
+        // 2. Compliance Directive
+        { name: 'TEMPLATE_1.docx', out: `${data.facility_name} Compliance Directive.docx` },
+
+        // 3. CAPA
+        { name: 'TEMPLATE_2.docx', out: `${data.facility_name} CAPA.docx` },
+
+        // 4. Risk Categorization Worksheet
+        { name: 'RISK_CATEGORIZATION TEMPLATE.docx', out: `${data.facility_name} Risk Categorization Worksheet.docx` }
     ];
 
     let errorMessages = [];
@@ -572,9 +601,18 @@ async function loadDashboardStats() {
 
         const processItem = (d) => {
             total++;
-            if (d.risk_rating === 'A' || d.risk_level === 'High') high++;
-            else if (d.risk_rating === 'B' || d.risk_level === 'Medium') medium++;
-            else low++;
+            // Robust check for High
+            if (d.risk_rating === 'A' || d.risk_level === 'High') {
+                high++;
+            }
+            // Robust check for Medium
+            else if (d.risk_rating === 'B' || d.risk_level === 'Medium') {
+                medium++;
+            }
+            // Default to Low
+            else {
+                low++;
+            }
         };
 
         // 1. Try Firestore
